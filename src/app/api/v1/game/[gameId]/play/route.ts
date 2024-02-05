@@ -1,4 +1,4 @@
-import { play } from "../../service";
+import { play } from "@/lib/service";
 
 interface PlayRequest {
     gameId: string;

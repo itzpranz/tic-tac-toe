@@ -10,7 +10,7 @@ export interface Player {
 
 export type Session = {
     id: string;
-    players: Map<string, Player>;
+    players: {[id: string]: Player};
     started: boolean;
     finished: boolean;
     winner: string | null;
@@ -31,25 +31,22 @@ const sessions: Map<string, Session> = new Map();
 
 export {sessions};
 
-export function startNewGameSession() {
-    const id = Math.random().toString(36).substring(2, 6);
+export function startNewGameSession(size: number) {
+    const id = Math.random().toString(36).substring(2, 8);
+
     sessions.set(id, {
         id,
-        players: new Map(),
+        players: {},
         started: false,
         finished: false,
         winner: null,
         turn: 'X',
-        board: [
-        [null, null, null],
-        [null, null, null],
-        [null, null, null]
-        ],
-        size: 3,
-        xRowCount: [0, 0, 0],
-        oRowCount: [0, 0, 0],
-        xColCount: [0, 0, 0],
-        oColCount: [0, 0, 0],
+        board: Array(size).fill(null).map(() => Array(size).fill(null)),
+        size,
+        xRowCount: Array(size).fill(0),
+        oRowCount: Array(size).fill(0),
+        xColCount: Array(size).fill(0),
+        oColCount: Array(size).fill(0),
         xDiagCount: 0,
         oDiagCount: 0,
         xAntiDiagCount: 0,
@@ -58,20 +55,44 @@ export function startNewGameSession() {
     return sessions.get(id);
 }
 
+export function restartGame(id: string) {
+    const session = sessions.get(id);
+
+    if (!session) throw SessionNotFound;
+    const size = session.size;
+    session.started = false,
+    session.finished = false,
+    session.winner = null,
+    session.board = Array(session.size).fill(null).map(() => Array(session.size).fill(null));
+    session.xRowCount = Array(size).fill(0),
+    session.oRowCount = Array(size).fill(0),
+    session.xColCount = Array(size).fill(0),
+    session.oColCount = Array(size).fill(0),
+    session.xDiagCount = 0,
+    session.oDiagCount = 0,
+    session.xAntiDiagCount = 0,
+    session.oAntiDiagCount = 0
+    
+    sessions.set(id, session);
+    return sessions.get(id);
+}
+
 export function joinGameSession(sessionId: string, name: string) {
     const session = sessions.get(sessionId);
 
     if (!session) throw SessionNotFound;
 
-    const id = Math.random().toString(36).substring(2, 9);
+    let numberOfPlayers = Object.keys(session.players).length;
 
-    if (session.players.size >= 2) throw SessionIsFull;
+    const id = numberOfPlayers.toString();
+
+    if (numberOfPlayers >= 2) throw SessionIsFull;
     
-    const symbol = session.players.size === 0 ? 'X' : 'O';
+    const symbol = numberOfPlayers === 0 ? 'X' : 'O';
     const player: Player = {id, name, symbol};
-    session.players.set(id, player);
+    session.players[id] = player;
     
-    if (session.players.size == 2) {
+    if (session.players['0'] && session.players['1']) {
         session.started = true;
     }
     
@@ -82,7 +103,7 @@ export function play(sessionId: string, playerId: string, x: number, y: number) 
     const session = sessions.get(sessionId);
     if (!session) throw SessionNotFound;
     
-    const player = session.players.get(playerId);
+    const player = session.players[playerId];
     if (!player) throw PlayerNotFound;
     
     if (session.turn != player.symbol) throw NotYourTurn;

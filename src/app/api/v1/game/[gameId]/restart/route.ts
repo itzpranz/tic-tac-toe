@@ -1,16 +1,9 @@
-import { joinGameSession } from "../../../../../../lib/service";
-
-interface PlayRequest {
-    gameId: string;
-    name: string;
-} 
+import { restartGame } from "@/lib/service";
 
 export async function POST(req: Request, {params}: {params: {gameId: string}}) {
-    const reqBody = await req.json();
-    const {name} = reqBody as PlayRequest;
 
     try {
-      const session = joinGameSession(params.gameId, name);
+      const session = restartGame(params.gameId);
 
       return new Response(JSON.stringify(session), {
         headers: {

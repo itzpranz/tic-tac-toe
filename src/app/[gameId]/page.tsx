@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { Session, Player } from "./../api/v1/game/service";
+import { Session, Player, Symbol } from "@/lib/service";
+import Board from "@/components/board";
+import Card from "@/components/card";
+import Button from "@/components/button";
 
 export default function Game({
     params,
@@ -50,6 +53,7 @@ export default function Game({
             });
             if (response.ok) {
               const jsonData = await response.json();
+              console.log('join', jsonData.session);
               setName(name);
               setPlayer(jsonData.player);
               setSession(jsonData.session);
@@ -72,6 +76,7 @@ export default function Game({
             });
             if (response.ok) {
               const session = await response.json();
+              console.log('play', session);
               setSession(session);
             } else {
               console.error('Failed to fetch data:', response.statusText);
@@ -81,33 +86,73 @@ export default function Game({
           }
     };
 
+    const restart = async () => {
+      try {
+        const response = await fetch(`/api/v1/game/${params.gameId}/restart`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({})
+        });
+        if (response.ok) {
+          const session = await response.json();
+          console.log('restart', session);
+          setSession(session);
+        } else {
+          console.error('Failed to fetch data:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+      const shareUrl = () => {
+        if (navigator.share) {
+          navigator.share({
+            title: document.title,
+            url: window.location.href
+          })
+            .then(() => console.log('Shared successfully'))
+            .catch((error) => console.error('Error sharing:', error));
+        } else {
+          console.log('Web Share API is not supported in this browser');
+        }
+      };
+    
+
     return (
         player.id && session ?
-        <main className="flex min-h-screen flex-col items-center justify-center p-24">
-            <div className="shadow-md p-4 mb-8"> Welcome {name} </div>
-            { !session.started ? <div className="shadow-md p-4 mb-8"> Waiting for other players to join... </div> : session.turn === player.symbol ? <div className="shadow-md p-4 mb-8"> Your turn </div> : <div className="shadow-md p-4 mb-8"> Waiting for other players to play... </div>}
-            { session.winner ? <div className="shadow-md p-4 mb-8"> {session.winner} wins! </div> : null }
-            { session.finished && !session.winner ? <div className="shadow-md p-4 mb-8"> Draw! </div> : null}
-            <div className="shadow-md p-4 bg-slate-50">
-                <div className="grid grid-cols-3 gap-2 bg-slate-900">
-                    {session.board.map((value, xIndex) => {
-                        return value.map((value, yIndex) => {
-                            return <button disabled={!session.started || value != null} onClick={() => play(xIndex, yIndex)} key={`${xIndex}-${yIndex}`} className="bg-slate-50 h-16 w-16 p-2 flex flex-col items-center justify-center">
-                                <div className=" text-black font-medium text-4xl">{value}</div>
-                            </button>
-                        })
-                    })}
-                </div>
+        <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24">
+            <div className="text-3xl md:text-5xl leading-loose mb-4">
+              <span className="underline decoration-blue-500 decoration-4 font-semibold">{session.players['0']?.name || '??'}</span>
+              <span className="text-xl md:text-2xl ml-2 mr-2">vs</span>
+              <span className="underline decoration-green-500 decoration-4 font-semibold">{session.players['1']?.name || '??'}</span></div>
+            <div className="p-4 italic">
+              {
+                !session.finished ?
+                (!session.started ? ' Waiting for other players to join...'
+                : session.turn === player.symbol ? 'Your turn' : 'Waiting for other play to play...')
+                : null
+              } </div>
+              { session.finished ? <div className={`text-4xl md:text-6xl mb-8 ${session.winner === 'X' ? 'text-blue-500' : 'text-green-500'} font-bold animate-bounce`}> { session.winner ? `${session.winner} wins` : 'Its a Draw!!!'} </div> : null }
+            <Board onCellClick={play} board={session.board} disabled={!session.started || session.turn !== player.symbol || session.finished} />
+            <div className="grid grid-cols-2 gap-4 text-center mt-8">
+              <Button onClick={restart}>Restart</Button>
+              <Button onClick={() => window.location.href = '/'}>New Game</Button>
             </div>
         </main>
         :
         <main className="flex min-h-screen flex-col items-center justify-center p-24">
-            <div className="shadow-md p-4 bg-slate-50 flex justify-between">
-                <input value={name} onChange={handleChange} className="border-2 border-gray-300 bg-white h-10 px-5 pr-16 rounded-lg text-sm text-black focus:outline-none mr-4" placeholder="Enter your name"/>
-                <button onClick={join} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                    Join Game
-                </button>
+        <button onClick={shareUrl} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        Share URL
+      </button>
+          <Card>
+            <div className="flex justify-between">
+                <input value={name} onChange={handleChange} className="border-2 border-gray-300 bg-white h-14 px-5 rounded-lg text-md text-black focus:outline-none mr-4" placeholder="Enter your name"/>
+                <Button onClick={join}>Join Game</Button>
             </div>
+          </Card>
         </main>
     );
 }
