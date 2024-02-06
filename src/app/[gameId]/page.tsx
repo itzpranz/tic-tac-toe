@@ -18,23 +18,33 @@ export default function Game({
     const [isJoining, setIsJoining] = useState(false);
 
     useEffect(() => {
-        const fetchData = async () => {
-          try {
-            const response = await fetch(`/api/v1/game/${params.gameId}`);
-            if (response.ok) {
-              const jsonData = await response.json();
-              setSession(jsonData);
-            } else {
-              console.error('Failed to fetch data:', response.statusText);
-            }
-          } catch (error) {
-            console.error('Error fetching data:', error);
-          }
-        };
+      const playerFromSessionStorage = sessionStorage.getItem('player_'+params.gameId);
 
-        const intervalId = setInterval(fetchData, 2000);
-        return () => clearInterval(intervalId);
-      }, [params.gameId]);
+      if (playerFromSessionStorage) {
+        setPlayer(JSON.parse(playerFromSessionStorage));
+      }
+
+      const fetchData = async () => {
+        try {
+          const response = await fetch(`/api/v1/game/${params.gameId}`);
+          if (response.ok) {
+            const jsonData = await response.json();
+            setSession(jsonData);
+          } else if (response.status === 404) {
+            goToHome();
+          } else {
+            console.error('Failed to fetch data:', response.statusText);
+          }
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        }
+      };
+
+      fetchData();
+
+      const intervalId = setInterval(fetchData, 2000);
+      return () => clearInterval(intervalId);
+    }, [params.gameId]);
 
     const handleChange = (event: any) => {
         setName(event.target.value);
@@ -53,6 +63,7 @@ export default function Game({
             if (response.ok) {
               const jsonData = await response.json();
               setName(name);
+              sessionStorage.setItem('player_' + params.gameId, JSON.stringify(jsonData.player));
               setPlayer(jsonData.player);
               setSession(jsonData.session);
             } else {
@@ -151,9 +162,13 @@ export default function Game({
       return -1
     }
 
+    const goToHome = () => {
+      window.location.href = '/';
+    }
+
     return (
-        player.id && session ?
-        <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24">
+        player.id && session.id ?
+          <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24">
             <div className="text-3xl md:text-5xl leading-loose mb-4 md:flex items-center">
               <div className="flex items-center justify-center">
                 <div className="underline decoration-blue-500 decoration-4 font-semibold">{session.players['0']?.name || '???'}</div>
@@ -185,17 +200,21 @@ export default function Game({
             />
             { session.finished ? <div className="grid grid-cols-2 gap-4 text-center mt-8">
               <Button isLoading={isRestarting} onClick={restart}>Restart</Button>
-              <Button onClick={() => window.location.href = '/'}>End Session</Button>
+              <Button onClick={goToHome}>End Session</Button>
             </div> : null }
         </main>
         :
-        <main className="flex min-h-screen flex-col items-center justify-center p-24">
+        !player.id ?
+        <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24">
           <Card>
             <div className="flex flex-col md:flex-row justify-between">
                 <input value={name} onChange={handleChange} className="border-2 border-gray-300 bg-white h-14 px-5 rounded-lg text-md text-black focus:outline-none md:mr-4 mb-2 md:mb-0" placeholder="Enter your name"/>
                 <Button isLoading={isJoining} onClick={join}>Join Game</Button>
             </div>
           </Card>
+        </main>
+        : <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24">
+          Loading...
         </main>
     );
 }
