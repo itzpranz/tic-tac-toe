@@ -161,6 +161,24 @@ export default function Game({
       }
       return -1
     }
+    const getWinner = (session: Session) => {
+      if (session.winner === 'X') {
+        return session.players['0']?.name + ' wins';
+      }
+      if (session.winner === 'O') {
+        return session.players['1']?.name + ' wins';
+      }
+      return 'Its a Draw!!!';
+    }
+    const getWinnerClass = (session: Session) => {
+      if (session.winner === 'X') {
+        return 'text-blue-500';
+      }
+      if (session.winner === 'O') {
+        return 'text-green-500';
+      }
+      return 'text-yellow-500';
+    }
 
     const goToHome = () => {
       window.location.href = '/';
@@ -188,7 +206,7 @@ export default function Game({
                 : session.turn === player.symbol ? 'Your turn' : 'Waiting for other player to play...')
                 : null
               } </div>
-              { session.finished ? <div className={`text-4xl md:text-6xl mb-8 ${session.winner === 'X' ? 'text-blue-500' : 'text-green-500'} font-bold animate-bounce`}> { session.winner ? `${session.winner} wins` : 'Its a Draw!!!'} </div> : null }
+              { session.finished ? <div className={`text-4xl md:text-6xl mb-8 ${getWinnerClass(session)} font-bold animate-bounce`}> { getWinner(session) } </div> : null }
             <Board
               onCellClick={play}
               board={session.board}
