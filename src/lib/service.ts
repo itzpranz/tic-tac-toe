@@ -6,6 +6,7 @@ export interface Player {
     id: string;
     name: string;
     symbol: Symbol;
+    wins: number;
 }
 
 export type Session = {
@@ -60,7 +61,7 @@ export function restartGame(id: string) {
 
     if (!session) throw SessionNotFound;
     const size = session.size;
-    session.started = false,
+    session.started = true,
     session.finished = false,
     session.winner = null,
     session.board = Array(session.size).fill(null).map(() => Array(session.size).fill(null));
@@ -89,7 +90,7 @@ export function joinGameSession(sessionId: string, name: string) {
     if (numberOfPlayers >= 2) throw SessionIsFull;
     
     const symbol = numberOfPlayers === 0 ? 'X' : 'O';
-    const player: Player = {id, name, symbol};
+    const player: Player = {id, name, symbol, wins: 0};
     session.players[id] = player;
     
     if (session.players['0'] && session.players['1']) {
@@ -128,9 +129,11 @@ export function play(sessionId: string, playerId: string, x: number, y: number) 
     if (session.xRowCount[x] === session.size || session.xColCount[y] === session.size || session.xDiagCount === session.size || session.xAntiDiagCount === session.size) {
         session.finished = true;
         session.winner = 'X';
+        session.players['0'].wins++;
     } else if (session.oRowCount[x] === session.size || session.oColCount[y] === session.size || session.oDiagCount === session.size || session.oAntiDiagCount === session.size) {
         session.finished = true;
         session.winner = 'O';
+        session.players['1'].wins++;
     } else if (session.board.every(row => row.every(cell => cell !== null))) {
         session.finished = true;
     }
