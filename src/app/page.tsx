@@ -7,10 +7,12 @@ import { useState } from "react";
 
 export default function Home() {
   const [size, setSize] = useState(3);
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter()
   
   const startGame = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch('/api/v1/game/start', {
         method: 'POST',
@@ -29,6 +31,8 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -52,7 +56,7 @@ export default function Home() {
       <div className="flex flex-col min-w-full justify-center text-center">
         <Slider value={size} min={3} max={12} onChange={(event) => {setSize(event.target.value)}}>{`${size} x ${size}`}</Slider>
         <div>
-        <Button onClick={startGame}>Start Game</Button>
+        <Button isLoading={isLoading} onClick={startGame}>Start Game</Button>
         </div>
         
       </div>

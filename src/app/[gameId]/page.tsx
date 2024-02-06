@@ -14,6 +14,8 @@ export default function Game({
     const [player, setPlayer] = useState({} as Player);
     const [name, setName] = useState();
     const [session, setSession] = useState({} as Session);
+    const [isRestarting, setIsRestarting] = useState(false);
+    const [isJoining, setIsJoining] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -39,6 +41,7 @@ export default function Game({
     };
 
     const join = async () => {
+      setIsJoining(true);
         try {
             const response = await fetch(`/api/v1/game/${params.gameId}/join`, {
               method: 'POST',
@@ -57,30 +60,36 @@ export default function Game({
             }
           } catch (error) {
             console.error('Error fetching data:', error);
+          } finally {
+            setIsJoining(false);
           }
     };
 
     const play = async (x: number, y: number) => {
-        try {
-            const response = await fetch(`/api/v1/game/${params.gameId}/play`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ playerId: player.id, x, y })
-            });
-            if (response.ok) {
-              const session = await response.json();
-              setSession(session);
-            } else {
-              console.error('Failed to fetch data:', response.statusText);
-            }
-          } catch (error) {
-            console.error('Error fetching data:', error);
+      const board = session.board;
+      board[x][y] = player.symbol;
+      setSession({ ...session, board });
+      try {
+          const response = await fetch(`/api/v1/game/${params.gameId}/play`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ playerId: player.id, x, y })
+          });
+          if (response.ok) {
+            const session = await response.json();
+            setSession(session);
+          } else {
+            console.error('Failed to fetch data:', response.statusText);
           }
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        }
     };
 
     const restart = async () => {
+      setIsRestarting(true);
       try {
         const response = await fetch(`/api/v1/game/${params.gameId}/restart`, {
           method: 'POST',
@@ -97,6 +106,8 @@ export default function Game({
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+      } finally {
+        setIsRestarting(false);
       }
     };
 
@@ -173,7 +184,7 @@ export default function Game({
               highlightAntiDiagonal={session.finished && (session.xAntiDiagCount === session.size || session.oAntiDiagCount === session.size)}
             />
             { session.finished ? <div className="grid grid-cols-2 gap-4 text-center mt-8">
-              <Button onClick={restart}>Restart</Button>
+              <Button isLoading={isRestarting} onClick={restart}>Restart</Button>
               <Button onClick={() => window.location.href = '/'}>End Session</Button>
             </div> : null }
         </main>
@@ -182,7 +193,7 @@ export default function Game({
           <Card>
             <div className="flex flex-col md:flex-row justify-between">
                 <input value={name} onChange={handleChange} className="border-2 border-gray-300 bg-white h-14 px-5 rounded-lg text-md text-black focus:outline-none md:mr-4 mb-2 md:mb-0" placeholder="Enter your name"/>
-                <Button onClick={join}>Join Game</Button>
+                <Button isLoading={isJoining} onClick={join}>Join Game</Button>
             </div>
           </Card>
         </main>
