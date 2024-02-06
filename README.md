@@ -27,4 +27,34 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ## License
 
+# Tic-Tac-Toe
+
+This is a simple implementation of the classic game Tic-Tac-Toe with variable board size.
+
+## Features
+
+- Play against a friend.
+- Keep track of the score for each player
+
+## Installation
+
+1. Clone the repository: `git clone https://github.com/itzpranz/tic-tac-toe.git`
+2. Navigate to the project directory: `cd tic-tac-toe`
+3. Install the dependencies: `npm install`
+
+## Usage
+
+1. Build the game: `npm run build`
+1. Start the game: `npm run start`
+2. Follow the on-screen instructions to play the game
+3. Enjoy!
+
+## Contributing
+
+Contributions are welcome! If you find any issues or have suggestions for improvements, please open an issue or submit a pull request.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
 [MIT](https://choosealicense.com/licenses/mit/)
