@@ -5,6 +5,7 @@ import { Session, Player, Symbol } from "@/lib/service";
 import Board from "@/components/board";
 import Card from "@/components/card";
 import Button from "@/components/button";
+import Dialog from "@/components/dialog";
 
 export default function Game({
     params,
@@ -16,6 +17,16 @@ export default function Game({
     const [session, setSession] = useState({} as Session);
     const [isRestarting, setIsRestarting] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
+
+    const [isDialogOpen, setDialogOpen] = useState(false);
+
+    const openDialog = () => {
+      setDialogOpen(true);
+    };
+
+    const closeDialog = () => {
+      setDialogOpen(false);
+    };
 
     useEffect(() => {
       const playerFromSessionStorage = sessionStorage.getItem('player_'+params.gameId);
@@ -129,7 +140,7 @@ export default function Game({
       input.select();
       document.execCommand('copy');
       document.body.removeChild(input);
-      alert('Link copied to clipboard, share with your friend to play together.');
+      openDialog();
     };
 
     const highlightCol = (session: Session) => {
@@ -220,6 +231,13 @@ export default function Game({
               <Button isLoading={isRestarting} onClick={restart}>Restart</Button>
               <Button onClick={goToHome}>End Session</Button>
             </div> : null }
+            <Dialog isOpen={isDialogOpen} onClose={closeDialog}>
+              <h2 className="text-xl font-bold text-black mb-4">URL Copied</h2>
+              <p className="text-black">The URL has been copied to the clipboard and can be shared with your friend to play.</p>
+              <div className="flex justify-cente mt-4">
+                <Button onClick={closeDialog}>Okay</Button>
+              </div>
+            </Dialog>
         </main>
         :
         !player.id ?
