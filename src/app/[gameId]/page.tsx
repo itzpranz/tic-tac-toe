@@ -143,6 +143,29 @@ export default function Game({
       openDialog();
     };
 
+    const playWithComputer = async () => {
+      setIsJoining(true);
+      try {
+          const response = await fetch(`/api/v1/game/${params.gameId}/join`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ isComputer: true })
+          });
+          if (response.ok) {
+            const jsonData = await response.json();
+            setSession(jsonData.session);
+          } else {
+            console.error('Failed to fetch data:', response.statusText);
+          }
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        } finally {
+          setIsJoining(false);
+        }
+    }
+
     const highlightCol = (session: Session) => {
       if (!session.finished) {
         return -1;
@@ -209,7 +232,12 @@ export default function Game({
                 { session.players['0']?.wins || session.players['1']?.wins ? <div className="bg-green-500 font-bold rounded-full ml-4 text-white text-lg md:text-2xl w-8 h-8 md:w-12 md:h-12 flex items-center justify-center">{session.players['1'].wins}</div> : null }
               </div>
             </div>
-            { !session.players['1'] ? <Button onClick={invite}>Invite your friend to Play</Button> : null }
+            { !session.players['1'] ?
+            <div className="flex">
+              <Button onClick={invite}>Invite your friend to Play</Button>
+              <Button className="ml-4" isLoading={isJoining} onClick={playWithComputer}>Play against computer</Button> 
+            </div> 
+            : null }
             <div className="p-4 italic">
               {
                 !session.finished ?

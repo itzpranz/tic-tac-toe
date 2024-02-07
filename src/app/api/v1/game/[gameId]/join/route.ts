@@ -1,16 +1,16 @@
-import { joinGameSession } from "../../../../../../lib/service";
+import { joinGameSession } from "@/lib/service";
 
 interface PlayRequest {
-    gameId: string;
     name: string;
+    isComputer: boolean
 } 
 
 export async function POST(req: Request, {params}: {params: {gameId: string}}) {
     const reqBody = await req.json();
-    const {name} = reqBody as PlayRequest;
+    const {name, isComputer} = reqBody as PlayRequest;
 
     try {
-      const session = joinGameSession(params.gameId, name);
+      const session = joinGameSession(params.gameId, name, isComputer);
 
       return new Response(JSON.stringify(session), {
         headers: {

@@ -11,6 +11,7 @@ export interface Player {
 
 export type Session = {
     id: string;
+    playAgainstComputer?: boolean;
     players: {[id: string]: Player};
     started: boolean;
     finished: boolean;
@@ -75,10 +76,13 @@ export function restartGame(id: string) {
     session.oAntiDiagCount = 0
     
     sessions.set(id, session);
+    if (session.playAgainstComputer && session.turn === 'O') {
+        playComputerTurn(id);
+    }
     return sessions.get(id);
 }
 
-export function joinGameSession(sessionId: string, name: string) {
+export function joinGameSession(sessionId: string, name: string, isComputer?: boolean) {
     const session = sessions.get(sessionId);
 
     if (!session) throw SessionNotFound;
@@ -88,6 +92,12 @@ export function joinGameSession(sessionId: string, name: string) {
     const id = numberOfPlayers.toString();
 
     if (numberOfPlayers >= 2) throw SessionIsFull;
+
+    if (isComputer) {
+        name = 'Computer'
+        session.playAgainstComputer = true;
+        sessions.set(sessionId, session);
+    }
     
     const symbol = numberOfPlayers === 0 ? 'X' : 'O';
     const player: Player = {id, name, symbol, wins: 0};
@@ -137,8 +147,113 @@ export function play(sessionId: string, playerId: string, x: number, y: number) 
     } else if (session.board.every(row => row.every(cell => cell !== null))) {
         session.finished = true;
     }
+
+    if (session.playAgainstComputer && session.turn === 'O' && !session.finished) {
+        setTimeout(() => playComputerTurn(sessionId), 1000);
+    }
     
     return session;
+}
+
+function playComputerTurn(sessionId: string) {
+    const session = sessions.get(sessionId);
+    if (!session) throw SessionNotFound;
+
+    const bestMove = findBestMove(session.board);
+
+    play(sessionId, '1', bestMove.row, bestMove.col);
+}
+
+function isBoardFull(board: Symbol[][]) {
+    return board.every(row => row.every(cell => cell !== null));
+}
+
+function isWinner(board: Symbol[][], player: Symbol) {
+    const size = board.length;
+    
+    for (let i = 0; i < size; i++) {
+        if (board[i].every(cell => cell === player) || board.every(row => row[i] === player)) {
+            return true;
+        }
+    }
+    
+    let diag1 = true;
+    let diag2 = true;
+    for (let i = 0; i < size; i++) {
+        if (board[i][i] !== player) {
+            diag1 = false;
+        }
+        if (board[i][size - 1 - i] !== player) {
+            diag2 = false;
+        }
+    }
+    return diag1 || diag2;
+}
+
+function evaluate(board: Symbol[][]) {
+    if (isWinner(board, 'O')) {
+        return 10;
+    } else if (isWinner(board, 'X')) {
+        return -10;
+    } else {
+        return 0;
+    }
+}
+
+function minimax(board: Symbol[][], depth: number, isMaximizing: boolean) {
+    const score = evaluate(board);
+
+    if (score === 10 || score === -10 || isBoardFull(board) || depth === 0) {
+        return score;
+    }
+
+    if (isMaximizing) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < board.length; i++) {
+            for (let j = 0; j < board.length; j++) {
+                if (board[i][j] === null) {
+                    board[i][j] = 'O';
+                    bestScore = Math.max(bestScore, minimax(board, depth - 1, false));
+                    board[i][j] = null;
+                }
+            }
+        }
+        return bestScore;
+    } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < board.length; i++) {
+            for (let j = 0; j < board.length; j++) {
+                if (board[i][j] === null) {
+                    board[i][j] = 'X';
+                    bestScore = Math.min(bestScore, minimax(board, depth - 1, true));
+                    board[i][j] = null;
+                }
+            }
+        }
+        return bestScore;
+    }
+}
+
+function findBestMove(board: Symbol[][]) {
+    let bestMove = { row: -1, col: -1 };
+    let bestScore = -Infinity;
+
+    for (let i = 0; i < board.length; i++) {
+        for (let j = 0; j < board.length; j++) {
+            if (board[i][j] === null) {
+                board[i][j] = 'O';
+                let score = minimax(board, 5, false);
+                board[i][j] = null;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove.row = i;
+                    bestMove.col = j;
+                }
+            }
+        }
+    }
+
+    return bestMove;
 }
 
 export function get(sessionId: string) {
